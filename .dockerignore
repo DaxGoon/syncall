@@ -1,0 +1,12 @@
+# git dir
+.git
+
+# markdown files
+*.md
+
+# Dockerfile itself -> no need to bring it to deployment
+Dockerfile
+
+# virtual env
+venv
+

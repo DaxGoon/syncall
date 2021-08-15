@@ -1,0 +1,16 @@
+# virtualenv
+venv
+.env
+.venv
+
+#cache dir
+__pycache__
+.pytest_cache/
+
+# Flask related
+instance/
+.webassets-cache
+
+# idea
+.idea
+
