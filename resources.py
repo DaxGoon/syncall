@@ -1,14 +1,16 @@
-import json
+import threading
 
 import requests
-from flask import jsonify
+from flask import jsonify, Response
 from flask_restful import request, Resource
 
 from config import Config
+from contemporary_storage import contemporary_storage
+from utils import keep_calling_on_failure
 
-SYNTHESIA_ENDPOINT = Config.synthesia_api_endpoint
-Q_P_KEY = Config.synthesia_api_sign_query_param_key
-API_KEY = Config.synthesia_api_key
+SYNTHESIA_ENDPOINT: str = Config.synthesia_api_endpoint
+Q_P_KEY: str = Config.synthesia_api_sign_query_param_key
+API_KEY: str = Config.synthesia_api_key
 
 
 class MessageSignConnector(Resource):
@@ -17,27 +19,50 @@ class MessageSignConnector(Resource):
      if available or a custom response with useful information to the client.
     """
 
-    def get(self):
+    def get(self) -> Response:
 
         args = request.args
         message = str(args["message"])
-        headers = {
-            'Content-Type': 'application/json',
-            "Authorization": API_KEY
-        }
+        headers = {"Content-Type": "application/json", "Authorization": API_KEY}
         try:
             res = requests.get(
-                SYNTHESIA_ENDPOINT + Q_P_KEY + message,
-                headers=headers,
-                timeout=2
+                SYNTHESIA_ENDPOINT + Q_P_KEY + message, headers=headers, timeout=2
             )
 
-            return res.text if res.ok else jsonify(
-                {"request_status": "failed",
-                 "reason": res.reason,
-                 "returned_status_code": res.status_code
-                 }
-            )
+            if res.ok:
+                return jsonify(res.text)
+            else:
+                thread = threading.Thread(
+                    target=keep_calling_on_failure,
+                    kwargs={
+                        "full_uri": SYNTHESIA_ENDPOINT + Q_P_KEY,
+                        "message": message,
+                        "headers": headers,
+                    },
+                )
+                thread.start()
+                return jsonify(
+                    {
+                        "message": "First API call did not succeed, persistent calling in the background in progress.",
+                        "next": "Call /delayed_response later to get the valid response (when available) of this call.",
+                    }
+                )
 
         except Exception as e:
             raise e
+
+
+class DelayedResponseProvider(Resource):
+    """Provides delayed response of last call for /crypto/sign endpoint if stored and available in the msg_store."""
+
+    def get(self) -> Response:
+        args = request.args
+        message = str(args["message"])
+        try:
+            return (
+                contemporary_storage.get(message)
+                if contemporary_storage.get(message)
+                else jsonify("The result is " "not available " "yet.")
+            )
+        except KeyError:
+            return jsonify("signed message not available yet, try again later.")
