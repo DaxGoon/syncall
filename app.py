@@ -7,9 +7,10 @@ app = Flask(__name__)
 api = Api(app)
 
 api.add_resource(
-    MessageSignConnector, "/crypto/sign/<string:message>"
+    MessageSignConnector, "/crypto/sign"
 )
 
 if __name__ == '__main__':
-    http_server = WSGIServer(('', 5000), app)
-    http_server.serve_forever()
+    # http_server = WSGIServer(('', 5000), app)
+    # http_server.serve_forever()
+    app.run(port=5000, debug=True)
