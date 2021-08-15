@@ -12,3 +12,5 @@ six==1.16.0
 Werkzeug==2.0.1
 zope.event==4.5.0
 zope.interface==5.4.0
+
+requests~=2.26.0
