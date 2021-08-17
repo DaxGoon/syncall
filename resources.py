@@ -1,3 +1,4 @@
+import json
 import threading
 
 import requests
@@ -5,7 +6,6 @@ from flask import jsonify, Response
 from flask_restful import request, Resource
 
 from config import Config
-from contemporary_storage import contemporary_storage
 from utils import keep_calling_on_failure
 
 SYNTHESIA_ENDPOINT: str = Config.synthesia_api_endpoint
@@ -56,13 +56,20 @@ class DelayedResponseProvider(Resource):
     """Provides delayed response of last call for /crypto/sign endpoint if stored and available in the msg_store."""
 
     def get(self) -> Response:
+        from models import Records
+        from schema import message_schema
         args = request.args
         message = str(args["message"])
         try:
+            returnable_q = Records.query.filter_by(message=message).first()
             return (
-                contemporary_storage.get(message)
-                if contemporary_storage.get(message)
-                else jsonify("The result is " "not available " "yet.")
+                message_schema.dump(returnable_q).get("signed_message") if returnable_q
+                else jsonify("The result is not available yet.")
             )
         except KeyError:
             return jsonify("signed message not available yet, try again later.")
+
+
+class DelayedResultAvailableNotification(Resource):
+    """Broadcast message when the delayed results are available."""
+    pass

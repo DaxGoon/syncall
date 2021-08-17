@@ -3,8 +3,6 @@ from typing import Any
 
 import requests
 
-from contemporary_storage import contemporary_storage
-
 
 def keep_calling_on_failure(**kwargs: Any) -> None:
     """
@@ -12,6 +10,8 @@ def keep_calling_on_failure(**kwargs: Any) -> None:
     :param kwargs: API request params.
     :return: None
     """
+    from app import db
+    from models import Records
     full_uri = kwargs.get("full_uri", {})
     message = kwargs.get("message", {})
     headers = kwargs.get("headers", {})
@@ -19,6 +19,11 @@ def keep_calling_on_failure(**kwargs: Any) -> None:
     for _ in range(100):
         res = requests.get(full_uri + message, headers=headers)
         if res.ok:
-            contemporary_storage[message] = res.text
+            try:
+                new_record = Records(message=message, signed_message=res.text)
+                db.session.add(new_record)
+                db.session.commit()
+            except Exception as e:
+                print(e)
             break
         sleep(6)
