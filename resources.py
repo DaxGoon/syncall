@@ -1,4 +1,3 @@
-import json
 import threading
 
 import requests
@@ -15,7 +14,7 @@ API_KEY: str = Config.synthesia_api_key
 
 class MessageSignConnector(Resource):
     """
-    Represent Synthesia API's Sign service by accepting and forwarding calls to it and returning either a valid response
+    Represent original API's Sign service by accepting and forwarding calls to it and returning either a valid response
      if available or a custom response with useful information to the client.
     """
 
@@ -58,18 +57,15 @@ class DelayedResponseProvider(Resource):
     def get(self) -> Response:
         from models import Records
         from schema import message_schema
+
         args = request.args
         message = str(args["message"])
         try:
             returnable_q = Records.query.filter_by(message=message).first()
             return (
-                message_schema.dump(returnable_q).get("signed_message") if returnable_q
+                message_schema.dump(returnable_q).get("signed_message")
+                if returnable_q
                 else jsonify("The result is not available yet.")
             )
         except KeyError:
             return jsonify("signed message not available yet, try again later.")
-
-
-class DelayedResultAvailableNotification(Resource):
-    """Broadcast message when the delayed results are available."""
-    pass

@@ -1,20 +1,23 @@
 import os
+from typing import Any
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-from gevent.pywsgi import WSGIServer
 from flask_restful import Api
+from flask_socketio import SocketIO  # &#
+from flask_sqlalchemy import SQLAlchemy
+
 from resources import MessageSignConnector, DelayedResponseProvider
 
-app = Flask(__name__)
+app: Flask = Flask(__name__)
+socketio: SocketIO = SocketIO(app)
 
-basedir = os.path.abspath(os.path.dirname(__file__))
+basedir: Any = os.path.abspath(os.path.dirname(__file__))
 app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///" + os.path.join(
     basedir, "db.sqlite"
 )
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app)
+db: SQLAlchemy = SQLAlchemy(app)
 ma = Marshmallow(app)
 
 api = Api(app)
@@ -22,6 +25,4 @@ api.add_resource(MessageSignConnector, "/crypto/sign")
 api.add_resource(DelayedResponseProvider, "/delayed_response")
 
 if __name__ == "__main__":
-    # http_server = WSGIServer(('', 5000), app)
-    # http_server.serve_forever()
-    app.run(port=5000, debug=True)
+    socketio.run(app, host="0.0.0.0", port=5000, use_reloader=False, debug=False)

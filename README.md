@@ -24,13 +24,17 @@ _Endpoints_
 :accepts - GET
 :query string param - message: str
 :returns - API response signed message on available result or info string oninforming unavailability of result.
+:socketio - broadcasts in realtime when signed msg is available. The client-side application can use any of the SocketIO
+ client libraries or compatible client to establish a permanent connection to listen the msg
+
 
 ```
 
 _How is it written?_
 * API resources are defined in resources.py.
 * API resources are registered in app.py.
-* uses WSGIServer from gevent library, serves the api on port 5000
+* uses WSGIServer with greenlet (gevent is also installed and can be switched to), serves the api on port 5000
+* uses SocketIO for broadcasting msg (notification)
 
 _How to build and run?_
 
@@ -86,6 +90,12 @@ class Config:
       
          `http://127.0.0.1:5000` or `http://localhost:5000`
    
+5. Tests:
+    - Tests are written using unittest module from python standard library. To run tests do the following:
+      - Start the server
+      - Start a new terminal session and go to the application directory
+      - run ```python test_app.py```
+
 
 ## Links
 1. Virtualenv installation
